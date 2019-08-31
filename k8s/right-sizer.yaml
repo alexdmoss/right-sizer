@@ -19,9 +19,9 @@ spec:
         env:
         - name: DEBUG
           value: "False"
-        # careful setting this to False - the VPA can get a bit wild, you may want to set maxAllowed
-        - name: RECOMMEND_ONLY
-          value: "True"
+        # careful setting this to "Auto" - the VPA can get a bit wild, you may want to set maxAllowed
+        - name: UPDATE_MODE
+          value: "Off"
         # Enable this to target a particular namespace
         # - name: NAMESPACE
         #   value: "${NAMESPACE}"

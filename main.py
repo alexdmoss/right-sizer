@@ -3,7 +3,7 @@
 '''
 Supports the following environment variables:
 
-    RECOMMEND_ONLY = True|False. Defaults to False - so will resize pods automatically
+    UPDATE_MODE = Off|Auto. Defaults to Off - recommendations mode only
     DEBUG = True|False. Defaults to False
     NAMESPACE = <string>. Useful for initial deployment - test against one namespace only. If unset, targets all namespaces
 
@@ -32,14 +32,12 @@ def main():
         logging.getLogger().setLevel(logging.DEBUG)
         logger.debug("Debugging is enabled")
 
-    recommend = getenv("RECOMMEND_ONLY")
-
-    if recommend and recommend == 'True':
-        logger.info("Running in RECOMMEND mode - pods will not be auto-resized")
-        update_mode = "Off"
+    update_mode = getenv("UPDATE_MODE")
+    if update_mode == 'Auto':
+        logger.info("Running in UPDATE mode - pods will be set to resize automatically")
     else:
-        logger.info("Running in UPDATE mode (default) - pods will be set to resize automatically")
-        update_mode = "Auto"
+        logger.info("Running in RECOMMEND mode (default) - pods will not be auto-resized")
+        update_mode = "Off"
 
     target_namespace = getenv("NAMESPACE")
 
