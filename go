@@ -14,6 +14,7 @@ function help() {
   echo -e "    help               Print this help"
   echo -e "    run                Run locally without building binary"
   echo -e "    build              Build binary locally"
+  echo -e "    deploy             Deploy to Kubernetes"
   echo -e "    test               Run local unit tests and linting"
   echo -e "    init               Set up local virtual env"
   echo -e 
@@ -174,7 +175,7 @@ function ctrl_c() {
 
 trap ctrl_c INT
 
-if [[ ${1:-} =~ ^(help|run|build|test|init)$ ]]; then
+if [[ ${1:-} =~ ^(help|run|build|deploy|test|init)$ ]]; then
   COMMAND=${1}
   shift
   $COMMAND "$@"

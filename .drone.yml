@@ -32,6 +32,6 @@ steps:
     branch: master
 ---
 kind: signature
-hmac: a6b1871af273972ab45c99ace1c37f35467c2ca0b1cbc5ead1bbf08d252f95dd
+hmac: 794349cb7e1e18705a220299094f089fe992a921c9eff4343093e53ebaaebb4b
 
 ...
