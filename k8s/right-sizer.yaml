@@ -1,0 +1,36 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: right-sizer
+  namespace: ${NAMESPACE}
+  labels:
+    app: right-sizer
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: right-sizer
+    spec:
+      containers:
+      - image: eu.gcr.io/${GCP_PROJECT_ID}/right-sizer:latest
+        name: right-sizer
+        env:
+        - name: DEBUG
+          value: "True"
+        - name: RECOMMEND_ONLY
+          value: "True"
+        - name: NAMESPACE
+          value: "${NAMESPACE}"
+        resources:
+            limits:
+              cpu: 80m
+              memory: 50Mi
+            requests:
+              cpu: 10m
+              memory: 25Mi
+        securityContext:
+          runAsNonRoot: true
+          readOnlyRootFilesystem: true
+          runAsUser: 6969
