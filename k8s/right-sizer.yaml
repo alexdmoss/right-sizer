@@ -18,11 +18,12 @@ spec:
         name: right-sizer
         env:
         - name: DEBUG
-          value: "True"
+          value: "False"
         - name: RECOMMEND_ONLY
-          value: "True"
-        - name: NAMESPACE
-          value: "${NAMESPACE}"
+          value: "False"
+        # Enable this to target a particular namespace
+        # - name: NAMESPACE
+        #   value: "${NAMESPACE}"
         resources:
             limits:
               cpu: 80m
@@ -33,4 +34,4 @@ spec:
         securityContext:
           runAsNonRoot: true
           readOnlyRootFilesystem: true
-          runAsUser: 6969
+          runAsUser: 1337
