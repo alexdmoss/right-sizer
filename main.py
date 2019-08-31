@@ -51,37 +51,34 @@ def main():
     except ConfigException:
         config.load_kube_config()  # fallback to local
 
-    apps_v1_api = client.AppsV1Api()
-    cus_obj_api = client.CustomObjectsApi()
-
     while True:
 
         w = watch.Watch()
 
-        for event in w.stream(apps_v1_api.list_deployment_for_all_namespaces, timeout_seconds=600):
+        patch_kube_system_resources()
 
-            if event["type"] == "ADDED":
+        create_vpas_for_deployments(w, target_namespace, update_mode)
 
-                obj = event["object"]
 
-                name = obj.metadata.name
-                namespace = obj.metadata.namespace
+def create_vpas_for_deployments(w, target_namespace, update_mode):
 
-                logger.debug(f"Found deployment {namespace}/{name}")
+    apps_v1_api = client.AppsV1Api()
+    cus_obj_api = client.CustomObjectsApi()
 
-                if target_namespace:
+    for event in w.stream(apps_v1_api.list_deployment_for_all_namespaces, timeout_seconds=600):
 
-                    if namespace == target_namespace:
+        if event["type"] == "ADDED":
 
-                        if not does_vpa_exist(cus_obj_api, namespace, name):
+            obj = event["object"]
 
-                            logger.info(f"Did not find VerticalPodAutoscaler for {namespace}/{name} - CREATING")
-                            create_vpa(cus_obj_api, obj, update_mode)
+            name = obj.metadata.name
+            namespace = obj.metadata.namespace
 
-                        else:
-                            logger.info(f"Found existing VerticalPodAutoscaler for {namespace}/{name} - SKIPPING")
+            logger.debug(f"Found deployment {namespace}/{name}")
 
-                else:
+            if target_namespace:
+
+                if namespace == target_namespace:
 
                     if not does_vpa_exist(cus_obj_api, namespace, name):
 
@@ -90,6 +87,110 @@ def main():
 
                     else:
                         logger.info(f"Found existing VerticalPodAutoscaler for {namespace}/{name} - SKIPPING")
+
+            else:
+
+                if not does_vpa_exist(cus_obj_api, namespace, name):
+
+                    logger.info(f"Did not find VerticalPodAutoscaler for {namespace}/{name} - CREATING")
+                    create_vpa(cus_obj_api, obj, update_mode)
+
+                else:
+                    logger.info(f"Found existing VerticalPodAutoscaler for {namespace}/{name} - SKIPPING")
+
+
+def patch_kube_system_resources():
+
+    patch = {
+        "spec": {
+            "template": {
+                "spec": {
+                    "containers": [
+                        {
+                            "name": "kubedns",
+                            "resources": {
+                                "requests": {
+                                    "cpu": "10m",
+                                    "memory": "50Mi",
+                                },
+                                "limits": {
+                                    "cpu": "100m",
+                                    "memory": "100Mi",
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    logger.info("Patching kube-dns:kubedns with lower resource requests/limits")
+    patch_deployment(name='kube-dns', patch=patch)
+
+    patch = {
+        "spec": {
+            "template": {
+                "spec": {
+                    "containers": [
+                        {
+                            "name": "dnsmasq",
+                            "resources": {
+                                "requests": {
+                                    "cpu": "10m",
+                                    "memory": "20Mi",
+                                },
+                                "limits": {
+                                    "cpu": "100m",
+                                    "memory": "50Mi",
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    logger.info("Patching kube-dns:dnsmasq with lower resource requests/limits")
+    patch_deployment(name='kube-dns', patch=patch)
+
+    patch = {
+        "spec": {
+            "template": {
+                "spec": {
+                    "containers": [
+                        {
+                            "name": "heapster",
+                            "resources": {
+                                "requests": {
+                                    "cpu": "10m",
+                                    "memory": "20Mi",
+                                },
+                                "limits": {
+                                    "cpu": "20m",
+                                    "memory": "100Mi",
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    logger.info("Patching heapster with lower resource requests/limits")
+    patch_deployment(name='heapster-v1.6.1', patch=patch)
+
+
+def patch_deployment(name: str, patch: str):
+    api_instance = client.AppsV1Api()
+    try:
+        api_instance.patch_namespaced_deployment(
+            name=name,
+            namespace='kube-system',
+            force=True,
+            field_manager='right-sizer',
+            body=patch)
+    except client.rest.ApiException as e:
+        logger.error(f"Failed to patch deployment: {name} - error was {e}")
 
 
 def does_vpa_exist(obj_api, namespace, name) -> bool:
