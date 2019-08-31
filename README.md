@@ -1,6 +1,6 @@
 # right-sizer
 
-Kubernetes Controller to create VPA (VerticalPodAutoscaler) policies and other resource request/limit settings on resources within the cluster.
+Kubernetes Controller to create VPA (VerticalPodAutoscaler) policies on deployments within the cluster.
 
 ---
 
@@ -20,9 +20,38 @@ NB: You can use `pipenv run ptw` to continuously run your tests in the backgroun
 
 ---
 
+## Setting Caps
+
+The code can be updated to set caps if you wish, add this to `generate_vpa_policy`'s spec (under `updatePolicy`):
+
+```python
+"resourcePolicy": {
+    "containerPolicies": [
+        {
+            "containerName": "*",
+            "maxAllowed": {
+                "memory": "200Mi",
+                "cpu": "200m",
+            },
+            "minAllowed": {
+                "memory": "50Mi",
+                "cpu": "10m",
+            }
+        }
+    ]
+}
+```
+
+---
+
 ## To Do
 
-- [ ] Controller to create VPA policy for all workloads
-- [ ] Controller to set resource requests/limits on certain objects
-- [ ] Tests
+- [x] Controller to create VPA policy for all workloads
+- [x] Configuration option to allow recommend/update
+- [x] Configuration option to target specific namespace
+- [ ] Docker packaging
+- [ ] Deployment to cluster
 - [ ] CI
+- [ ] Tests
+- [ ] Controller to set resource requests/limits on certain objects - e.g. individual pods?
+- [ ] Extend to cover DaemonSets & StatefulSets?
