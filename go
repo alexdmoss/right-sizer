@@ -34,7 +34,7 @@ function run() {
 
   _console_msg "Running python:main ..." INFO true
 
-  pipenv run python3 main.py
+  pipenv run python3 main.py "$@"
 
   _console_msg "Execution complete" INFO true
 
