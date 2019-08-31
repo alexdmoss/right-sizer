@@ -1,8 +1,16 @@
 #!/usr/bin/env python
 
+'''
+Supports the following environment variables:
+
+RECOMMEND_ONLY = True|False. Defaults to False - so will resize pods automatically
+DEBUG = True|False. Defaults to False
+NAMESPACE = <string>. Useful for initial deployment - test against one namespace only. If unset, targets all namespaces
+'''
+
 import sys
 import logging
-from argparse import ArgumentParser
+from os import getenv
 from kubernetes import client, config, watch
 from kubernetes.config.config_exception import ConfigException
 # from typing import List
@@ -18,21 +26,24 @@ def main():
 
     logger.info("right-sizer has started")
 
-    parser = ArgumentParser()
-    parser.add_argument("--recommend", help="VPA are created in recommend (updateMode: off) mode only", action="store_true")
-    parser.add_argument("-v", "--debug", help="Turn on debugging", action="store_true")
-    args = parser.parse_args()
-
-    if args.debug:
+    debug = getenv("DEBUG")
+    if debug and debug is True:
         logging.getLogger().setLevel(logging.DEBUG)
         logger.debug("Debugging is enabled")
 
-    if args.recommend:
+    recommend = getenv("RECOMMEND_ONLY")
+    if recommend and recommend is True:
         logger.info("Running in RECOMMEND mode - pods will not be auto-resized")
         update_mode = "Off"
     else:
         logger.info("Running in UPDATE mode (default) - pods will be set to resize automatically")
         update_mode = "Auto"
+
+    target_namespace = getenv("NAMESPACE")
+    if target_namespace:
+        logger.info(f"Namespace specified - VPA policy will only be created for deployments in {target_namespace}")
+    else:
+        logger.info("No namespace specified - ALL namespaces will be targeted with VPA policy")
 
     try:
         config.load_incluster_config()  # on cluster
@@ -56,30 +67,27 @@ def main():
                 name = obj.metadata.name
                 namespace = obj.metadata.namespace
 
-                logger.info(f"Found deployment {namespace}/{name}")
+                logger.debug(f"Found deployment {namespace}/{name}")
 
-                # Temporary safety check
-                if namespace == "mw-platform":
+                try:
+                    cus_obj_api.get_namespaced_custom_object(
+                        "autoscaling.k8s.io",
+                        "v1beta2",
+                        namespace,
+                        "verticalpodautoscalers",
+                        name)
+                    logger.debug(f"Found existing VerticalPodAutoscaler for {namespace}/{name} - will overwrite")
+                except client.rest.ApiException as e:
+                    if e.status == 404:
+                        logger.debug(f"Did not find VerticalPodAutoscaler for {namespace}/{name} - creating")
+                    else:
+                        raise
 
-                    try:
-                        cus_obj_api.get_namespaced_custom_object(
-                            "autoscaling.k8s.io",
-                            "v1beta2",
-                            namespace,
-                            "verticalpodautoscalers",
-                            name)
-                        logger.debug(f"Found existing VPA for {namespace}/{name} - will overwrite")
-                    except client.rest.ApiException as e:
-                        if e.status == 404:
-                            logger.debug(f"Did not find VPA for {namespace}/{name} - creating")
-                        else:
-                            raise
-
-                    vpa = generate_vpa(obj, update_mode)
-
-                    create_vpa(cus_obj_api, vpa, namespace, name)
-
-    logger.info("Script completed")
+                if target_namespace:
+                    if target_namespace == namespace:
+                        create_vpa(cus_obj_api, obj, update_mode)
+                else:
+                    create_vpa(cus_obj_api, obj, update_mode)
 
 
 def generate_vpa(obj, update_mode):
@@ -118,12 +126,13 @@ def generate_vpa(obj, update_mode):
     return vpa
 
 
-def create_vpa(api, vpa, namespace, name):
-    logger.info(f"Creating VerticalPodAutoscaler for {namespace}/{name}")
+def create_vpa(api, obj, update_mode):
+    logger.info(f"Creating VerticalPodAutoscaler for {obj.metadata.namespace}/{obj.metadata.name}")
+    vpa = generate_vpa(obj, update_mode)
     try:
-        api.create_namespaced_custom_object("autoscaling.k8s.io", "v1beta2", namespace, "verticalpodautoscalers", vpa)
+        api.create_namespaced_custom_object("autoscaling.k8s.io", "v1beta2", obj.metadata.namespace, "verticalpodautoscalers", vpa)
     except client.rest.ApiException as e:
-        logger.error(f"Failed to create VPA policy for {namespace}/{name} - error was {e}")
+        logger.error(f"Failed to create VPA policy for {obj.metadata.namespace}/{obj.metadata.name} - error was {e}")
 
 
 def init():
