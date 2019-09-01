@@ -102,6 +102,7 @@ kubectl patch deployment kube-dns -p '{"spec": {"template": {"spec": {"container
 - [x] Docker packaging
 - [x] Deployment to cluster
 - [x] CI
+- [ ] Need to add image versioning to CI deployment
 - [ ] Clean up patching code if it proves to be viable
 - [ ] Tests
 - [ ] Extend to cover DaemonSets & StatefulSets?
