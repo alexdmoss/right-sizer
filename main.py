@@ -167,7 +167,7 @@ def patch_kube_system_resources():
                                 },
                                 "limits": {
                                     "cpu": "20m",
-                                    "memory": "100Mi",
+                                    "memory": "50Mi",
                                 }
                             }
                         }
@@ -178,6 +178,84 @@ def patch_kube_system_resources():
     }
     logger.info("Patching heapster with lower resource requests/limits")
     patch_deployment(name='heapster-v1.6.1', patch=patch)
+
+    patch = {
+        "spec": {
+            "template": {
+                "spec": {
+                    "containers": [
+                        {
+                            "name": "heapster-nanny",
+                            "resources": {
+                                "requests": {
+                                    "cpu": "10m",
+                                    "memory": "20Mi",
+                                },
+                                "limits": {
+                                    "cpu": "20m",
+                                    "memory": "50Mi",
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    logger.info("Patching heapster-nanny with lower resource requests/limits")
+    patch_deployment(name='heapster-v1.6.1', patch=patch)
+
+    patch = {
+        "spec": {
+            "template": {
+                "spec": {
+                    "containers": [
+                        {
+                            "name": "metrics-server",
+                            "resources": {
+                                "requests": {
+                                    "cpu": "10m",
+                                    "memory": "20Mi",
+                                },
+                                "limits": {
+                                    "cpu": "20m",
+                                    "memory": "50Mi",
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    logger.info("Patching metrics-server with lower resource requests/limits")
+    patch_deployment(name='metrics-server-v0.3.1', patch=patch)
+
+    patch = {
+        "spec": {
+            "template": {
+                "spec": {
+                    "containers": [
+                        {
+                            "name": "metrics-server-nanny",
+                            "resources": {
+                                "requests": {
+                                    "cpu": "10m",
+                                    "memory": "20Mi",
+                                },
+                                "limits": {
+                                    "cpu": "20m",
+                                    "memory": "50Mi",
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    logger.info("Patching metrics-server-nanny with lower resource requests/limits")
+    patch_deployment(name='metrics-server-v0.3.1', patch=patch)
 
 
 def patch_deployment(name: str, patch: str):
