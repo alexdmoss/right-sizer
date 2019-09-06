@@ -8,7 +8,7 @@ steps:
   settings:
     registry: eu.gcr.io
     repo: moss-work/right-sizer
-    tags: latest
+    tags: ${DRONE_COMMIT_SHA}
     json_key:
       from_secret: MW_PUSH_CREDS
   when:
@@ -32,6 +32,6 @@ steps:
     branch: master
 ---
 kind: signature
-hmac: 794349cb7e1e18705a220299094f089fe992a921c9eff4343093e53ebaaebb4b
+hmac: 7bd50871cfdc8d4d7672916bcbae56d8836e252cf1badb5eae5e190ae5897348
 
 ...
