@@ -100,7 +100,7 @@ function build() {
 
 function deploy() {
 
-  _assert_variables_set GCP_PROJECT_ID NAMESPACE
+  _assert_variables_set GCP_PROJECT_ID
 
   pushd $(dirname $BASH_SOURCE[0]) >/dev/null
 
@@ -117,10 +117,21 @@ function deploy() {
     _console_msg "-> Authenticating to cluster ${K8S_CLUSTER_NAME} in project ${GCP_PROJECT_ID} in ${region}"
     gcloud container clusters get-credentials ${K8S_CLUSTER_NAME} --project=${GCP_PROJECT_ID} --region=${region}
 
+  else
+
+    _assert_variables_set DRONE_COMMIT_SHA
+
   fi
 
+  popd >/dev/null
+
+  pushd "k8s/" >/dev/null
+
   _console_msg "Applying Kubernetes yaml"
-  cat k8s/*.yaml | envsubst | kubectl apply -n ${NAMESPACE} -f -
+
+  kustomize edit set image right-sizer=eu.gcr.io/${GCP_PROJECT_ID}/right-sizer:${DRONE_COMMIT_SHA}
+  kustomize build . | kubectl apply -f -
+  kubectl rollout status deploy/right-sizer -n ${NAMESPACE}
 
   popd >/dev/null
 

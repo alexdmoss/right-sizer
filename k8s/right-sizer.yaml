@@ -3,18 +3,12 @@ apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
   name: right-sizer
-  namespace: ${NAMESPACE}
-  labels:
-    app: right-sizer
 spec:
   replicas: 1
   template:
-    metadata:
-      labels:
-        app: right-sizer
     spec:
       containers:
-      - image: eu.gcr.io/${GCP_PROJECT_ID}/right-sizer:latest
+      - image: right-sizer:SET_BY_CI
         name: right-sizer
         env:
         - name: DEBUG
