@@ -2,19 +2,39 @@
 
 Kubernetes Controller to create VPA (VerticalPodAutoscaler) policies on deployments within the cluster.
 
+I've written more about this in a blog post here: https://mosstech.io/2019/09/28/squeezing-gke-system-resources-in-small-clusters/
+
 ---
 
-## Usage
+## What Does It Do
 
-You need either `docker` or `python` on your local machine - both are easy to install on most common OSes.
+It is a custom controller written in Python.
 
-If using python directly, `pipenv install --dev` from the root directory.
+### 1. Create VPA Policy
 
-There is a wrapper script (`./go` in `bash`) to make this easier (**Note:** CI does not currently use this):
+It will watch for new Deployments being created (either in all namespaces or a particular one, depending on supplied argument) and create a corresponding VPA resource in either "recommend mode" or update mode. See `./k8s/right-sizer.yaml` (in particular, the comments) for configuring this behaviour.
 
-- `./go run`- run go locally without building
-- `./go test` - run unit tests and benchmarks
-- `./go build` - builds docker image locally and runs smoke tests
+### 2. Patch kube-system Pods
+
+When `KUBE_PATCH_SYSTEM` is set to True, it will also target particular resources in the `kube-system` namespace for patching - since we do not control the PodSpec for these.
+
+This effectively re-applies chosen resource requests/limits for named pods every 10 minutes - overriding any settings applied by Google for these GKE-managed resources. **Use this feature at your own risk!**
+
+### 3. Apply Fluentd GCP ScalingPolicy
+
+Finally, the deployment stage of the CI will apply `./k8s/fluentd-scaling.yaml`, which creates a `ScalingPolicy` for GKE's `fluentd-gcp-auto-scaler` to use to right-size Fluentd. This is a built-in feature of GKE, so skipped by the patching above.
+
+---
+
+## Development
+
+I like using a `go` bash wrapper script because I am lazy.
+
+- `./go init` effectively runs `.pipenv install --dev` from the root directory as a one-off to get started with this repo
+- `./go run`- runs the controller locally without building
+- `./go test` - runs lint and pytest locally
+- `./go build` - builds docker image locally, which includes running the tests baked into the Dockerfile
+- `./go deploy` - typically run in a CI pipeline. Applies Kubernetes yaml to deploy the built image (which has been pushed by a previous CI stage)
 
 NB: You can use `pipenv run ptw` to continuously run your tests in the background - quite helpful!
 
@@ -96,13 +116,7 @@ kubectl patch deployment kube-dns -p '{"spec": {"template": {"spec": {"container
 
 ## To Do
 
-- [x] Controller to create VPA policy for all workloads
-- [x] Configuration option to allow recommend/update
-- [x] Configuration option to target specific namespace
-- [x] Docker packaging
-- [x] Deployment to cluster
-- [x] CI
-- [ ] Need to add image versioning to CI deployment
+- [ ] Add fluentd GCP scaler
 - [ ] Clean up patching code if it proves to be viable
 - [ ] Tests
 - [ ] Extend to cover DaemonSets & StatefulSets?
