@@ -7,10 +7,6 @@ logging.basicConfig(level=logging.INFO,
 
 logger = logging.getLogger(__name__)
 
-if getenv("DEBUG"):
-    logging.getLogger().setLevel(logging.DEBUG)
-    logger.debug("Debugging is enabled")
-
 
 def set_update_mode():
     if getenv("UPDATE_MODE") == 'Auto':
@@ -32,7 +28,8 @@ def set_namespace():
 
 
 def set_patch_kube_system():
-    if getenv("PATCH_KUBE_SYSTEM"):
+    patch = getenv("PATCH_KUBE_SYSTEM")
+    if patch == "True":
         logger.info(f"Patching of kube-system is ENABLED - kube-system resources will have resource requests/limits updated")
         return True
     else:

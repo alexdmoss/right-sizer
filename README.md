@@ -33,16 +33,15 @@ I like using a `go` bash wrapper script because I am lazy.
 - `./go init` effectively runs `.pipenv install --dev` from the root directory as a one-off to get started with this repo
 - `./go run`- runs the controller locally without building
 - `./go test` - runs lint and pytest locally
+- `./go watch-tests` - runs pytest continuously in the background (using the `ptw` module)
 - `./go build` - builds docker image locally, which includes running the tests baked into the Dockerfile
 - `./go deploy` - typically run in a CI pipeline. Applies Kubernetes yaml to deploy the built image (which has been pushed by a previous CI stage)
-
-NB: You can use `pipenv run ptw` to continuously run your tests in the background - quite helpful!
 
 ---
 
 ## Patching Deployments & DaemonSets in kube-system
 
-Values to patch into the kube-system deployments are stored in a fairly self-intuitive yaml file `./patch-kube-system-resources.yaml`. Names must match exactly the resources in kube-system you want to patch: deployment -> container -> limit|request -> cpu|memory.
+Values to patch into the kube-system deployments are stored in a fairly self-intuitive yaml file `./patch-kube-system-resources.yaml`. Names must match exactly the resources in kube-system you want to patch: deployment -> container -> limits|requests -> cpu|memory.
 
 I chose to patch kube-dns, heapster and metrics-server, as these were the beefiest in my current GKE setup. I wanted  patch `kube-proxy`, but it sucks because it is a set of bare pods that *look* like a DaemonSet but there ain't no DaemonSet to configure - presumably it sits on the GKE Master node(s) which we can't reach. This means that, as far as I can tell, we need to live with the lack of limits set here, as VPA can't manage bare pods either and you can't patch the resource requests/limits of a Pod (the PodSpec is immutable). Boo hiss.
 
@@ -76,7 +75,6 @@ As noted above, Fluentd DaemonSet is handled separately as it can be easily scal
 
 ## To Do
 
-- [ ] yaml loader warning
 - [ ] Can we scan for matching deployments to avoid the hardcoded version issue?
 - [ ] Tests
-- [ ] Extend to cover DaemonSets & StatefulSets?
+- [ ] Extend to cover DaemonSets & StatefulSets? *I do not have a need currently*

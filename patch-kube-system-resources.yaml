@@ -1,46 +1,46 @@
 deployments:
   kube-dns:
     kubedns:
-      request:
+      requests:
           cpu: "10m"
           memory: "50Mi"
-      limit:
+      limits:
           cpu: "100m"
           memory: "100Mi"
     dnsmasq:
-      request:
+      requests:
           cpu: "10m"
           memory: "20Mi"
-      limit:
+      limits:
           cpu: "100m"
           memory: "50Mi"
   heapster-v1.6.1:
     heapster:
-      request:
+      requests:
           cpu: "10m"
           memory: "20Mi"
-      limit:
+      limits:
           cpu: "20m"
           memory: "50Mi"
     heapster-nanny:
-      request:
+      requests:
           cpu: "10m"
           memory: "20Mi"
-      limit:
+      limits:
           cpu: "20m"
           memory: "50Mi"
   metrics-server-v0.3.1:
     metrics-server:
-      request:
+      requests:
           cpu: "10m"
           memory: "20Mi"
-      limit:
+      limits:
           cpu: "20m"
           memory: "50Mi"
     metrics-server-nanny:
-      request:
+      requests:
           cpu: "10m"
           memory: "20Mi"
-      limit:
+      limits:
           cpu: "20m"
           memory: "50Mi"        

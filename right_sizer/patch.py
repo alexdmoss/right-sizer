@@ -17,16 +17,16 @@ if getenv("DEBUG"):
 def patch_kube_system_resources():
 
     patch_file = "patch-kube-system-resources.yaml"
-    
+
     for deployment, containers in yaml.load(open(patch_file), Loader=yaml.FullLoader)["deployments"].items():
 
         for container, resources in containers.items():
 
             patch = generate_patch(container=container,
-                                   request_cpu=resources["request"]["cpu"],
-                                   request_memory=resources["request"]["memory"],
-                                   limit_cpu=resources["limit"]["cpu"],
-                                   limit_memory=resources["limit"]["memory"])
+                                   request_cpu=resources["requests"]["cpu"],
+                                   request_memory=resources["requests"]["memory"],
+                                   limit_cpu=resources["limits"]["cpu"],
+                                   limit_memory=resources["limits"]["memory"])
 
             logger.info(f"Patching {deployment}:{container} with lower resource requests/limits")
 

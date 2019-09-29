@@ -11,10 +11,11 @@ Supports the following environment variables:
 
 import sys
 import logging
-
 from os import getenv
+
 from kubernetes import client, config, watch
 from kubernetes.config.config_exception import ConfigException
+
 import right_sizer.vpa as vpa
 import right_sizer.patch as patch
 import right_sizer.utils as utils

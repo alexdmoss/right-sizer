@@ -16,6 +16,7 @@ function help() {
   echo -e "    build              Build binary locally"
   echo -e "    deploy             Deploy to Kubernetes"
   echo -e "    test               Run local unit tests and linting"
+  echo -e "    watch-tests        Run local tests continuously while developing"
   echo -e "    init               Set up local virtual env"
   echo -e 
   exit 0
@@ -43,48 +44,27 @@ function run() {
 
 function test() {
 
-    _console_msg "Running pylint ..." INFO true
+    _console_msg "Running flake8 ..." INFO true
 
-    if [[ ${ignore_linting_failures} == "Y" ]]; then
-
-      pipenv run pylint main.py  || true
-      pipenv run pylint src/ || true
-
-      _console_msg "Running flake8 ..." INFO true
-
-      pipenv run flake8 main.py  || true
-      pipenv run flake8 src/ || true
-
-      _console_msg "Running pycodestyle (pep8) ..." INFO true
-
-      pipenv run pycodestyle main.py  || true
-      pipenv run pycodestyle src/ || true
-
-    else 
-      
-      pipenv run pylint main.py
-      pipenv run pylint src/
-
-      _console_msg "Running flake8 ..." INFO true
-
-      pipenv run flake8 main.py
-      pipenv run flake8 src/
-
-      _console_msg "Running pycodestyle (pep8) ..." INFO true
-
-      pipenv run pycodestyle main.py 
-      pipenv run pycodestyle src/
-    
-    fi 
+    pipenv run flake8 . || true
 
     _console_msg "Running unit tests ..." INFO true
 
-    # pip install pipenv==2018.10.13
-    # pipenv install --dev --deploy --ignore-pipfile --system
-    # pipenv run pytest -s -v "./test_main.py" --disable-pytest-warnings --junit-xml junit-report.xml  
-    # pipenv lock -r > requirements.txt
+    pipenv run pytest -s -v 
 
     _console_msg "Tests complete" INFO true
+
+}
+
+function watch-tests() {
+
+  pushd $(dirname $BASH_SOURCE[0]) > /dev/null
+  
+  _console_msg "Following unit tests ..." INFO true
+
+  pipenv run ptw
+
+  popd > /dev/null
 
 }
 
@@ -186,7 +166,7 @@ function ctrl_c() {
 
 trap ctrl_c INT
 
-if [[ ${1:-} =~ ^(help|run|build|deploy|test|init)$ ]]; then
+if [[ ${1:-} =~ ^(help|run|build|deploy|test|watch-tests|init)$ ]]; then
   COMMAND=${1}
   shift
   $COMMAND "$@"
