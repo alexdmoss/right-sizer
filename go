@@ -48,32 +48,32 @@ function test() {
     if [[ ${ignore_linting_failures} == "Y" ]]; then
 
       pipenv run pylint main.py  || true
-      pipenv run pylint modules/ || true
+      pipenv run pylint src/ || true
 
       _console_msg "Running flake8 ..." INFO true
 
       pipenv run flake8 main.py  || true
-      pipenv run flake8 modules/ || true
+      pipenv run flake8 src/ || true
 
       _console_msg "Running pycodestyle (pep8) ..." INFO true
 
       pipenv run pycodestyle main.py  || true
-      pipenv run pycodestyle modules/ || true
+      pipenv run pycodestyle src/ || true
 
     else 
       
       pipenv run pylint main.py
-      pipenv run pylint modules/
+      pipenv run pylint src/
 
       _console_msg "Running flake8 ..." INFO true
 
       pipenv run flake8 main.py
-      pipenv run flake8 modules/
+      pipenv run flake8 src/
 
       _console_msg "Running pycodestyle (pep8) ..." INFO true
 
       pipenv run pycodestyle main.py 
-      pipenv run pycodestyle modules/
+      pipenv run pycodestyle src/
     
     fi 
 

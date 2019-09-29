@@ -11,6 +11,7 @@ Supports the following environment variables:
 
 import sys
 import logging
+import yaml
 from os import getenv
 from kubernetes import client, config, watch
 from kubernetes.config.config_exception import ConfigException
@@ -111,161 +112,46 @@ def create_vpas_for_deployments(w, target_namespace, update_mode, update_frequen
 
 def patch_kube_system_resources():
 
-    patch = {
-        "spec": {
-            "template": {
-                "spec": {
-                    "containers": [
-                        {
-                            "name": "kubedns",
-                            "resources": {
-                                "requests": {
-                                    "cpu": "10m",
-                                    "memory": "50Mi",
-                                },
-                                "limits": {
-                                    "cpu": "100m",
-                                    "memory": "100Mi",
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        }
-    }
-    logger.info("Patching kube-dns:kubedns with lower resource requests/limits")
-    patch_deployment(name='kube-dns', patch=patch)
+    for deployment, containers in yaml.load(open("patch-kube-system-resources.yaml"))["deployments"].items():
+        for container, resources in containers.items():
+            patch = generate_patch(container=container,
+                                   request_cpu=resources["request"]["cpu"],
+                                   request_memory=resources["request"]["memory"],
+                                   limit_cpu=resources["limit"]["cpu"],
+                                   limit_memory=resources["limit"]["memory"])
+            logger.info(f"Patching {deployment}:{container} with lower resource requests/limits")
+            patch_deployment(name=deployment, patch=patch)
+
+
+def generate_patch(container, request_cpu, request_memory, limit_cpu, limit_memory):
 
     patch = {
-        "spec": {
-            "template": {
                 "spec": {
-                    "containers": [
-                        {
-                            "name": "dnsmasq",
-                            "resources": {
-                                "requests": {
-                                    "cpu": "10m",
-                                    "memory": "20Mi",
-                                },
-                                "limits": {
-                                    "cpu": "100m",
-                                    "memory": "50Mi",
+                    "template": {
+                        "spec": {
+                            "containers": [
+                                {
+                                    "name": container,
+                                    "resources": {
+                                        "requests": {
+                                            "cpu": request_cpu,
+                                            "memory": request_memory,
+                                        },
+                                        "limits": {
+                                            "cpu": limit_cpu,
+                                            "memory": limit_memory,
+                                        }
+                                    }
                                 }
-                            }
+                            ]
                         }
-                    ]
+                    }
                 }
             }
-        }
-    }
-    logger.info("Patching kube-dns:dnsmasq with lower resource requests/limits")
-    patch_deployment(name='kube-dns', patch=patch)
 
-    patch = {
-        "spec": {
-            "template": {
-                "spec": {
-                    "containers": [
-                        {
-                            "name": "heapster",
-                            "resources": {
-                                "requests": {
-                                    "cpu": "10m",
-                                    "memory": "20Mi",
-                                },
-                                "limits": {
-                                    "cpu": "20m",
-                                    "memory": "50Mi",
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        }
-    }
-    logger.info("Patching heapster with lower resource requests/limits")
-    patch_deployment(name='heapster-v1.6.1', patch=patch)
+    logger.debug(f"Generated Patch Object: {patch}")
 
-    patch = {
-        "spec": {
-            "template": {
-                "spec": {
-                    "containers": [
-                        {
-                            "name": "heapster-nanny",
-                            "resources": {
-                                "requests": {
-                                    "cpu": "10m",
-                                    "memory": "20Mi",
-                                },
-                                "limits": {
-                                    "cpu": "20m",
-                                    "memory": "50Mi",
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        }
-    }
-    logger.info("Patching heapster-nanny with lower resource requests/limits")
-    patch_deployment(name='heapster-v1.6.1', patch=patch)
-
-    patch = {
-        "spec": {
-            "template": {
-                "spec": {
-                    "containers": [
-                        {
-                            "name": "metrics-server",
-                            "resources": {
-                                "requests": {
-                                    "cpu": "10m",
-                                    "memory": "20Mi",
-                                },
-                                "limits": {
-                                    "cpu": "20m",
-                                    "memory": "50Mi",
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        }
-    }
-    logger.info("Patching metrics-server with lower resource requests/limits")
-    patch_deployment(name='metrics-server-v0.3.1', patch=patch)
-
-    patch = {
-        "spec": {
-            "template": {
-                "spec": {
-                    "containers": [
-                        {
-                            "name": "metrics-server-nanny",
-                            "resources": {
-                                "requests": {
-                                    "cpu": "10m",
-                                    "memory": "20Mi",
-                                },
-                                "limits": {
-                                    "cpu": "20m",
-                                    "memory": "50Mi",
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        }
-    }
-    logger.info("Patching metrics-server-nanny with lower resource requests/limits")
-    patch_deployment(name='metrics-server-v0.3.1', patch=patch)
+    return patch
 
 
 def patch_deployment(name: str, patch: str):

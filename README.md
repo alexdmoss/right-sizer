@@ -118,5 +118,6 @@ kubectl patch deployment kube-dns -p '{"spec": {"template": {"spec": {"container
 
 - [ ] Add fluentd GCP scaler
 - [ ] Clean up patching code if it proves to be viable
+- [ ] Can we scan for matching deployments to avoid the hardcoded version issue?
 - [ ] Tests
 - [ ] Extend to cover DaemonSets & StatefulSets?
