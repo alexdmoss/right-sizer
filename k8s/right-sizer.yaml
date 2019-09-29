@@ -19,6 +19,10 @@ spec:
         # Enable this to target a particular namespace
         # - name: NAMESPACE
         #   value: "${NAMESPACE}"
+        - name: PATCH_KUBE_SYSTEM
+          value: "True"
+        - name: UPDATE_FREQUENCY
+          value: "600"
         resources:
             limits:
               cpu: 80m

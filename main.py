@@ -40,11 +40,20 @@ def main():
         update_mode = "Off"
 
     target_namespace = getenv("NAMESPACE")
-
     if target_namespace:
         logger.info(f"Namespace specified - VPA policy will only be created for deployments in {target_namespace}")
     else:
         logger.info("No namespace specified - ALL namespaces will be targeted with VPA policy")
+
+    patch_kube_system = getenv("PATCH_KUBE_SYSTEM")
+    if patch_kube_system:
+        logger.info(f"Patching of kube-system is ENABLED - kube-system resources will have resource requests/limits updated")
+    else:
+        logger.info("Patching of kube-system is DISABLED - these will be managed by Kubernetes itself")
+
+    update_frequency = getenv("UPDATE_FREQUENCY")
+    if not update_frequency:
+        update_frequency = 600
 
     try:
         config.load_incluster_config()  # on cluster
@@ -55,17 +64,18 @@ def main():
 
         w = watch.Watch()
 
-        patch_kube_system_resources()
+        if patch_kube_system:
+            patch_kube_system_resources()
 
-        create_vpas_for_deployments(w, target_namespace, update_mode)
+        create_vpas_for_deployments(w, target_namespace, update_mode, update_frequency)
 
 
-def create_vpas_for_deployments(w, target_namespace, update_mode):
+def create_vpas_for_deployments(w, target_namespace, update_mode, update_frequency):
 
     apps_v1_api = client.AppsV1Api()
     cus_obj_api = client.CustomObjectsApi()
 
-    for event in w.stream(apps_v1_api.list_deployment_for_all_namespaces, timeout_seconds=600):
+    for event in w.stream(apps_v1_api.list_deployment_for_all_namespaces, timeout_seconds=int(update_frequency)):
 
         if event["type"] == "ADDED":
 
