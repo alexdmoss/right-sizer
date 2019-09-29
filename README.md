@@ -42,57 +42,17 @@ NB: You can use `pipenv run ptw` to continuously run your tests in the backgroun
 
 ## Patching Deployments & DaemonSets in kube-system
 
-Some fun and games with this. The following seem to be on the more resource-hungry side:
+Values to patch into the kube-system deployments are stored in a fairly self-intuitive yaml file `./patch-kube-system-resources.yaml`. Names must match exactly the resources in kube-system you want to patch: deployment -> container -> limit|request -> cpu|memory.
 
-- Deployments:
-  - heapster-v1.6.1 - wants a lot of memory
-  - kube-dns - wants a lot of CPU
-- DaemonSets:
-  - fluentd-gcp-v3.1.1 - wants a lot of memory
-- Pods:
-  - kube-proxy - wants a lot of CPU
+I chose to patch kube-dns, heapster and metrics-server, as these were the beefiest in my current GKE setup. I wanted  patch `kube-proxy`, but it sucks because it is a set of bare pods that *look* like a DaemonSet but there ain't no DaemonSet to configure - presumably it sits on the GKE Master node(s) which we can't reach. This means that, as far as I can tell, we need to live with the lack of limits set here, as VPA can't manage bare pods either and you can't patch the resource requests/limits of a Pod (the PodSpec is immutable). Boo hiss.
 
-We can patch the Deployments using our Controller - the code currently is horrendous as I just wanted to prove this works - I'm leaving the controller running for a bit to prove this out before I'll come back and tidy this up!
-
-The Fluentd DaemonSet can be easily scaled via the ScalingPolicy - see "How to create a custom scaling policy" under https://cloud.google.com/kubernetes-engine/docs/how-to/small-cluster-tuning#logging. Mine is as follows:
-disable HPA (addon)
-
-```yaml
----
-apiVersion: scalingpolicy.kope.io/v1alpha1
-kind: ScalingPolicy
-metadata:
-  name: fluentd-gcp-scaling-policy
-  namespace: kube-system
-spec:
-  containers:
-  - name: fluentd-gcp
-    resources:
-      limits:
-      - base: 50m
-        resource: cpu
-      - base: 200Mi
-        resource: memory
-      requests:
-      - base: 10m
-        resource: cpu
-      - base: 50Mi
-        resource: memory
-```
-
-However, `kube-proxy` sucks because it is a set of bare pods that *look* like a DaemonSet but there ain't no DaemonSet to configure - presumably it sits on the GKE Master node(s) which we can't reach. This means that, as far as I can tell, we need to live with the lack of limits set here, as VPA can't manage bare pods either and you can't patch the resource requests/limits of a Pod. Boo hiss.
-
-Experimenting with this looks a little like this:
-
-```sh
-kubectl patch deployment kube-dns -p '{"spec": {"template": {"spec": {"containers": [{"name":"kubedns","resources":{"limits":{"cpu":"20m","memory":"100Mi"},"requests":{"cpu":"10m","memory":"50Mi"}}}]}}}}'
-```
+As noted above, Fluentd DaemonSet is handled separately as it can be easily scaled via the ScalingPolicy - see "How to create a custom scaling policy" under https://cloud.google.com/kubernetes-engine/docs/how-to/small-cluster-tuning#logging.
 
 ---
 
 ## Setting Caps For the VPA
 
-**If** you go with `updateMode: Auto` then it is probably a smart idea to update the code to set some caps. The extension to the spec is below, but keep in mind this would get applied to **all** your Deployments - add this to `generate_vpa_policy`'s spec (under `updatePolicy`):
+**If** you go with `updateMode: Auto` (I didn't) then it is probably a smart idea to update the code to set some caps. The extension to the spec is below, but keep in mind this would get applied to **all** your Deployments - add this to `generate_vpa_policy`'s spec (under `updatePolicy`):
 
 ```python
 "resourcePolicy": {
@@ -116,8 +76,7 @@ kubectl patch deployment kube-dns -p '{"spec": {"template": {"spec": {"container
 
 ## To Do
 
-- [ ] Add fluentd GCP scaler
-- [ ] Clean up patching code if it proves to be viable
+- [ ] yaml loader warning
 - [ ] Can we scan for matching deployments to avoid the hardcoded version issue?
 - [ ] Tests
 - [ ] Extend to cover DaemonSets & StatefulSets?
