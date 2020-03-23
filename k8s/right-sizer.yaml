@@ -1,5 +1,5 @@
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: right-sizer
@@ -8,29 +8,29 @@ spec:
   template:
     spec:
       containers:
-      - image: right-sizer:SET_BY_CI
-        name: right-sizer
-        env:
-        - name: DEBUG
-          value: "False"
-        # careful setting this to "Auto" - the VPA can get a bit wild, you may want to set maxAllowed
-        - name: UPDATE_MODE
-          value: "Off"
-        # Enable this to target a particular namespace
-        # - name: NAMESPACE
-        #   value: "${NAMESPACE}"
-        - name: PATCH_KUBE_SYSTEM
-          value: "True"
-        - name: UPDATE_FREQUENCY
-          value: "600"
-        resources:
+        - image: right-sizer:SET_BY_CI
+          name: right-sizer
+          env:
+            - name: DEBUG
+              value: "False"
+            # careful setting this to "Auto" - the VPA can get a bit wild, you may want to set maxAllowed
+            - name: UPDATE_MODE
+              value: "Off"
+            # Enable this to target a particular namespace
+            # - name: NAMESPACE
+            #   value: "${NAMESPACE}"
+            - name: PATCH_KUBE_SYSTEM
+              value: "True"
+            - name: UPDATE_FREQUENCY
+              value: "600"
+          resources:
             limits:
               cpu: 80m
               memory: 50Mi
             requests:
               cpu: 10m
               memory: 25Mi
-        securityContext:
-          runAsNonRoot: true
-          readOnlyRootFilesystem: true
-          runAsUser: 1337
+          securityContext:
+            runAsNonRoot: true
+            readOnlyRootFilesystem: true
+            runAsUser: 1337
